@@ -1,37 +1,117 @@
-## Welcome to GitHub Pages
+# POC Strapi-Saleor 
 
-You can use the [editor on GitHub](https://github.com/maurice30120/pocDocStrapiSaleor/edit/main/docs/index.md) to maintain and preview the content for your website in Markdown files.
+> Basé sur l'architecture proposée par Saleor :
+[lien](https://saleor.io/blog/combining-headless-architectures-with-saleor-and-strapi-147/) 
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
-### Markdown
+![alt](./archi.jpg)
+# Besoin :
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+### Etendre les données de saleor pour permettre de créer un frontend performant est adaptable : 
 
-```markdown
-Syntax highlighted code block
+ 1. **saleor :**
+ permet de gérer le côté métier d'un site e-commerce (prix, stock, user...)
+ 2. **strapi :** 
+permet de servir les données côté front (image, texte riche ...) avec une grande souplesse. Strapi permet d'ajouter et gerer du contenu très facilement. 
+ De plus les images sont optimisées au build par Gatsby 
 
-# Header 1
-## Header 2
-### Header 3
+Combiner les deux outils permettrait de créer grâce à la puissance de graphQL un nouveau schema qui repondrait au besoin de Grandes marques à savoir enrichir les contenus proposés et dont dispose Saleor afin d'améliorer le positionnement (SEO) de pages web.
 
-- Bulleted
-- List
+## Migration strapi V4 
+### Intérêts : 
 
-1. Numbered
-2. List
+ 1. Plus simple d'utilisation (interface admin)
+ 2. Creation de plugin plus facile 
+ 3. Support strapi (arrêt du support V3 dans 6 mois, donc inévitable)
+ 4. Marketplace de plugins, d'extensions
 
-**Bold** and _Italic_ and `Code` text
 
-[Link](url) and ![Image](src)
+## Contenu du POC : 
+
+Créer une table de lien avec  nom  et ID_collection   
+Etendre les données de la collection 
+### workflow : 
+
+```mermaid
+graph LR
+A[plugin-strapi-saleor] -- requete collection --> B((saleor))
+
+B -- ajout saleor_id, name--> C(collection)
+C -- ajout content -->D[item collection étendu]
+
+```
+#### Interface strapi :
+
+![Etendre une collection existante](./extendCollection.jpg)
+
+
+## A faire :
+
+### Creation d'une collection sur saleor à partir de stapi
+
+ - les collections doivent référencer les catégories  (pour permettre
+   l'affichage sur la page voulue)
+-  Mettre en meta la regle de creation collection pour pouvoir gerer les futur import de produit : relier automatiquement les nouveaux produits au catégorie existante
+
+### Migration strapi V4
+
+ - migrer la structure du projet de la V3 à la V4
+ - nouvelle DB postgresql
+ - migrer plugin de livraison 
+
+###  Données strapi  : 
+Table de lien + collection de contenus reliée a la table de liens 
+
+ - collection de contenu  : 
+	 - Données de catégories / sous catégories 
+	 - Rich text 
+	 - ... à définir 
+
+```mermaid
+classDiagram
+Strapi_saleor <|-- CollectionEtendu : saleor_id
+CollectionEtendu_categorie <|-- Strapi_saleor : CollectionEtendu_categorie_id
+
+Strapi_saleor : id_categorie
+Strapi_saleor : name
+
+CollectionEtendu : id
+CollectionEtendu : richText content
+CollectionEtendu: ...
+
+
+CollectionEtendu_categorie : string[] id_categorie / sousCategorie
+CollectionEtendu_categorie : string[] slug ?
+
 ```
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+## diagrams
 
-### Jekyll Themes
+Création d'une nouvelle collection saleor :
+```mermaid
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/maurice30120/pocDocStrapiSaleor/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+sequenceDiagram
 
-### Support or Contact
+Strapi-plugin->> Saleor: Recuperation des catégories/ sous catégories
+Saleor->> Strapi-plugin: catégories/ sous catégories
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+Strapi-plugin->> Saleor: recuperation des attributs
+Saleor->> Strapi-plugin: attributs
+
+Strapi-plugin->> Saleor: recherche de produits par non ...
+
+Saleor->> Strapi-plugin: Produits  selectionnés
+Note left of Strapi-plugin: UI de selection des produits <br/>
+
+Strapi-plugin->> Strapi-plugin: creation de la requette <br/> de creation collection Saleor
+
+Strapi-plugin->> Saleor: requete de creation de la colletion
+
+Saleor->> Strapi-plugin: collection créer
+
+Strapi-plugin->> saleor_strapi: ajout saleor_id name
+
+saleor_strapi->> strapi-collection: ajout saleor_id content
+
+```
+
